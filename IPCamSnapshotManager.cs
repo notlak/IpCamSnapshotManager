@@ -69,6 +69,7 @@ namespace IPCamSnapshotManager
         {
             _timer.Stop();
             ProcessFiles();
+            PruneCacheFiles();
         }
 
         private bool ParseFilename(string f, out string filename, out DateTime dt, out string shortDateTime)
@@ -235,9 +236,13 @@ namespace IPCamSnapshotManager
 
         private void PruneCacheFiles()
         {
+            Console.WriteLine("PruneCacheFiles() start");
+
             // get a list of all the files
 
             var files = Directory.EnumerateFiles(CacheDir, "*.jpg");
+
+            Console.WriteLine("Cache file count: " + files.Count<string>().ToString());
 
             try
             {
@@ -249,24 +254,31 @@ namespace IPCamSnapshotManager
                 }
 
                 // now check if we need to remove any
-                int toRemove = MaxCacheFiles - _cacheSet.Count;
+                int toRemove = _cacheSet.Count - MaxCacheFiles;
 
                 if (toRemove > 0)
                 {
                     for (int i = 0; i < toRemove; i++)
                     {
                         string jpgFile = _cacheSet.ElementAt<String>(0);
-                        _cacheSet.Remove(jpgFile);
-                       // _cacheSet.Remove(txt);
+                        string metaFile = Path.ChangeExtension(jpgFile, "txt");
 
+                        _cacheSet.Remove(jpgFile);
+
+                        System.IO.File.Delete(jpgFile);
+                        System.IO.File.Delete(metaFile);
+
+                        Console.WriteLine("Deleted cache file: " + jpgFile);
                     }
                 }
 
             }
             catch (Exception e)
             {
-
+                Console.WriteLine("Exception in PruneCacheFiles() " + e.Message);
             }
+
+            Console.WriteLine("PruneCacheFiles() end");
         }
 
         private void ResizeImage(string imageFile, string outputFile, int width, int height)
@@ -306,6 +318,7 @@ namespace IPCamSnapshotManager
             {
                 Console.WriteLine("Exception: " + e.Message + " " + e.InnerException.Message);
             }
+
         }
 
         // this is to allow the service to run as a command line app
